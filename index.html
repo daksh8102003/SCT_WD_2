@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attractive To-Do List App</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 50px;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+        .task-item {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+        .task-item:hover {
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        .task-item.completed {
+            background-color: #e9ecef;
+            opacity: 0.7;
+        }
+        .task-item.completed .task-text {
+            text-decoration: line-through;
+        }
+        .task-actions {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+        .task-actions button {
+            margin-left: 5px;
+        }
+        .add-task-form {
+            background-color: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">To-Do List App</h1>
+        <div class="add-task-form">
+            <form id="task-form">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="task-input" placeholder="Enter a new task" required>
+                </div>
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="task-datetime" placeholder="Set date and time">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Add Task</button>
+            </form>
+        </div>
+        <div id="task-list"></div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskForm = document.getElementById('task-form');
+            const taskInput = document.getElementById('task-input');
+            const taskDatetime = document.getElementById('task-datetime');
+            const taskList = document.getElementById('task-list');
+
+            // Initialize Flatpickr for date and time input
+            flatpickr(taskDatetime, {
+                enableTime: true,
+                dateFormat: "Y-m-d H:i",
+            });
+
+            let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+            function saveTasks() {
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+
+            function renderTasks() {
+                taskList.innerHTML = '';
+                tasks.forEach((task, index) => {
+                    const taskItem = document.createElement('div');
+                    taskItem.classList.add('task-item');
+                    if (task.completed) {
+                        taskItem.classList.add('completed');
+                    }
+                    taskItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="task-text mb-1">${task.text}</h5>
+                                <small class="text-muted">${task.datetime || 'No date set'}</small>
+                            </div>
+                            <div class="task-actions">
+                                <button class="btn btn-sm btn-outline-success complete-btn">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-primary edit-btn">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger delete-btn">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+
+                    const completeBtn = taskItem.querySelector('.complete-btn');
+                    const editBtn = taskItem.querySelector('.edit-btn');
+                    const deleteBtn = taskItem.querySelector('.delete-btn');
+
+                    completeBtn.addEventListener('click', () => toggleComplete(index));
+                    editBtn.addEventListener('click', () => editTask(index));
+                    deleteBtn.addEventListener('click', () => deleteTask(index));
+
+                    taskList.appendChild(taskItem);
+                });
+            }
+
+            function addTask(text, datetime) {
+                tasks.push({ text, datetime, completed: false });
+                saveTasks();
+                renderTasks();
+            }
+
+            function toggleComplete(index) {
+                tasks[index].completed = !tasks[index].completed;
+                saveTasks();
+                renderTasks();
+            }
+
+            function editTask(index) {
+                const newText = prompt('Edit task:', tasks[index].text);
+                if (newText !== null) {
+                    tasks[index].text = newText;
+                    saveTasks();
+                    renderTasks();
+                }
+            }
+
+            function deleteTask(index) {
+                if (confirm('Are you sure you want to delete this task?')) {
+                    tasks.splice(index, 1);
+                    saveTasks();
+                    renderTasks();
+                }
+            }
+
+            taskForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const text = taskInput.value.trim();
+                const datetime = taskDatetime.value;
+                if (text) {
+                    addTask(text, datetime);
+                    taskInput.value = '';
+                    taskDatetime.value = '';
+                }
+            });
+
+            renderTasks();
+        });
+    </script>
+</body>
+</html>
